@@ -60,12 +60,12 @@ def purchase(request,petId,pet_amount,pet_validCode):
         seed, captcha =  get_captcha(request)
         data['captcha'] = captcha
         data['seed'] = seed
-        page = request.post("https://pet-chain.baidu.com/data/txn/create", headers=headers, data=json.dumps(data), timeout=2)
-        res = json.loads(page.content)
-        print(res)
-        msg = res["errorMsg"]
-        if msg == "success":
-            print("购买成功")
+        res = request.post("https://pet-chain.baidu.com/data/txn/create", headers=headers, data=json.dumps(data), timeout=2)
+        res = json.loads(res.content)
+        code = res['errorNo']
+        msg = res['errorMsg']
+
+        return  code,msg
     except Exception as e:
         raise BusinessException("验证码获取异常")
 
@@ -85,11 +85,11 @@ def get_captcha(request):
     res = json.loads(page.content)
     msg = res["errorMsg"]
     if msg == "success":
-        img = "data: image / jpeg;base64," + res["data"]["img"]
+        img = res["data"]["img"]
         seed = res["data"]["seed"]
         captcha =getValidCode(img)
     else:
-        raise BusinessException("验证码获取异常")
+        raise BusinessException("获取验证码图片异常")
     return seed, captcha
 
 
@@ -139,9 +139,16 @@ def main():
                  cache.set(petid, buyUrl,30)
                  if config.type==1:
                      #下单
-                     purchase(request,petid,amount,validCode)
-
-
+                     count =0
+                     while count<100:
+                         code ,msg  = purchase(request,petid,amount,validCode)
+                         if config.sendMsg == 0:
+                             itchat.send("等级： " + str(rareDegree) + "价格：" + str(amount)+"  "+msg,toUserName=config.toUserName)
+                         if code != '100':#如果是验证码错误则重新买
+                             break
+                         else:
+                             count =count+1
+                             continue
 
         except BusinessException as e:
             print(e.value)
@@ -152,27 +159,15 @@ def main():
 
 '''
 def getValidCode(imgBase64):
-    send_data = parse.urlencode([
-        ('showapi_appid', config.showapi_appid)
-        , ('showapi_sign', config.showapi_sign)
-        , ('img_base64', imgBase64)
-        , ('typeId', 34)
-        , ('convert_to_jpg', 0)
-
-    ])
-    req = request.Request(config.apiurl)
+    data = {'img':imgBase64}
     try:
-        response = request.urlopen(req, data=send_data.encode('utf-8'), timeout = 10) # 10秒超时反馈
-    except Exception as e:
-        raise BusinessException("第三方接口服务器异常")
-    result = response.read().decode('utf-8')
-    result_json = json.loads(result)
-    print ('result_json data is:', result_json)
-    if result_json["showapi_res_code"] ==0:
-       return  result_json["showapi_res_body"]["Result"]
-    else:
-         raise BusinessException("第三方接口错误")
-
+        response = requests.post(config.apiurl, data=json.dumps(data),headers=headers,timeout = 1);
+        if response.status_code == 200:
+            return   response.text
+        else:
+            raise BusinessException("验证码异常")
+    except:
+        raise BusinessException("验证码服务器异常")
 #自定义异常
 class BusinessException(Exception):
     def __init__(self, value):
