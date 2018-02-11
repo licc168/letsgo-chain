@@ -11,10 +11,9 @@
    username = '' #用户名
    password = '' #密码
 
-   第三方验证码接口平台（https://www.showapi.com/api/sku/184）
+   云服务器接口
+   apiurl = 'http://***:8080/ocr'
 
-   showapi_appid=""  #替换此值
-   showapi_sign=""   #替换此值
 
 
     key：等级 0-4依次（普通-稀有-卓越-史诗-神话）

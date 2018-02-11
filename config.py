@@ -24,7 +24,7 @@ rares = {0:200,1:400,2:600,3:1000,4:2000,5:3000}
 urlDetail = "https://pet-chain.baidu.com/chain/detail?channel=market&petId="
 
 '''
-第三方接口 
+云服务器接口 验证码接口
 
 '''
 
