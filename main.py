@@ -1,9 +1,12 @@
 # -*- coding:utf8 -*-
 import base64
+import random
 from urllib import    request, parse
 import json
 import requests
 import time
+
+import common
 import  login
 import  config
 from cache import Cache
@@ -12,6 +15,7 @@ import itchat
 获取数据接口
 '''
 headers = {'content-type': 'application/json'}
+proxie = { }
 def queryMarketData(pageNo,pageSize,querySortType):
 
     try:
@@ -27,7 +31,7 @@ def queryMarketData(pageNo,pageSize,querySortType):
             "requestId":time.time()
         }
        # print(data)
-        s =  requests.post("https://pet-chain.baidu.com/data/market/queryPetsOnSale",  data=json.dumps(data), headers=headers,timeout=5)
+        s =  requests.post("https://pet-chain.baidu.com/data/market/queryPetsOnSale", data=json.dumps(data), headers=headers,timeout=5)
     except:
         raise BusinessException("服务器异常")
     status =  s.status_code
@@ -85,7 +89,9 @@ def get_captcha(request):
     res = json.loads(page.content)
     msg = res["errorMsg"]
     if msg == "success":
-        img = res["data"]["img"]
+        #img = res["data"]["img"]
+
+        img = "data: image / jpeg;base64," + res["data"]["img"]
         seed = res["data"]["seed"]
         captcha =getValidCode(img)
     else:
@@ -112,9 +118,17 @@ def main():
         request = login.login(config.username,config.password)
 
     cache =  Cache()
+
     while True:
+        time.sleep(random.randint(1,2))
+        # thisip = str(common.get_proxy(), encoding="utf-8")
+        # poxyIp = "http://{}".format(thisip);
+        # proxie["http"] = poxyIp;
+        # if common.isUseIp(thisip):
         try:
+         #time.sleep(random.randint(1,2))
          # 获取数据默认按照时间倒叙
+         #"AMOUNT_DESC"  "CREATETIME_ASC"
          data =  queryMarketData(1,10,"AMOUNT_ASC")
          for item in data:
              #没猜错的话这个是等级  0-4
@@ -126,6 +140,7 @@ def main():
                  print("等级： " + str(rareDegree) + "价格：" + str(amount))
                  validCode = item["validCode"]
                  if validCode=='':
+                     print("validCode为空")
                      continue
                  buyUrl = config.urlDetail+petid+"&validCode="+validCode
                  if (buyUrl == cache.get(petid)):
@@ -142,8 +157,11 @@ def main():
                      count =0
                      while count<100:
                          code ,msg  = purchase(request,petid,amount,validCode)
+
                          if config.sendMsg == 0:
                              itchat.send("等级： " + str(rareDegree) + "价格：" + str(amount)+"  "+msg,toUserName=config.toUserName)
+                         else:
+                             print("等级： " + str(rareDegree) + "价格：" + str(amount) + "  " + msg)
                          if code != '100':#如果是验证码错误则重新买
                              break
                          else:
@@ -158,16 +176,45 @@ def main():
 调用第三方验证码接口
 
 '''
+
+
+## 本地接口
+# def getValidCode(imgBase64):
+#     data = {'img':imgBase64}
+#     try:
+#         response = requests.post(config.apiurl, data=json.dumps(data),headers=headers,timeout = 1);
+#         if response.status_code == 200:
+#             return   response.text
+#         else:
+#             raise BusinessException("验证码异常")
+#     except:
+#         raise BusinessException("验证码服务器异常")
+
+
+#  易源数据验证码接口
 def getValidCode(imgBase64):
-    data = {'img':imgBase64}
+    send_data = parse.urlencode([
+        ('showapi_appid', config.showapi_appid)
+        , ('showapi_sign', config.showapi_sign)
+        , ('img_base64', imgBase64)
+        , ('typeId', 34)
+        , ('convert_to_jpg', 0)
+
+    ])
+    req = request.Request(config.apiurl)
     try:
-        response = requests.post(config.apiurl, data=json.dumps(data),headers=headers,timeout = 1);
-        if response.status_code == 200:
-            return   response.text
-        else:
-            raise BusinessException("验证码异常")
-    except:
-        raise BusinessException("验证码服务器异常")
+        response = request.urlopen(req, data=send_data.encode('utf-8'), timeout=10)  # 10秒超时反馈
+    except Exception as e:
+        raise BusinessException("第三方接口服务器异常")
+    result = response.read().decode('utf-8')
+    result_json = json.loads(result)
+    print('result_json data is:', result_json)
+    if result_json["showapi_res_code"] == 0:
+        return result_json["showapi_res_body"]["Result"]
+    else:
+        raise BusinessException("第三方接口错误")
+
+
 #自定义异常
 class BusinessException(Exception):
     def __init__(self, value):
