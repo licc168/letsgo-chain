@@ -279,8 +279,13 @@ Args;
 
 '''
 def printMsg(body,eye,mouth,rareDegree,amount,count,buyUrl):
-    print(body + ":" + eye + " " + mouth + "  " + config.rareDegrees[rareDegree] + " " + str(
-        amount / 10000) + "万 " + str(count) + " " + buyUrl)
+    msg = body + ":" + eye + " " + mouth + "  " + config.rareDegrees[rareDegree] + " " + str(
+        amount / 10000) + "万 " + str(count) + " " + buyUrl
+    print(msg)
+    if config.sendMsg==0:
+        itchat.send(msg, toUserName=config.toUserName)
+
+
 
 '''
 下单 如果验证码出错则重试100次直到成功
@@ -292,19 +297,20 @@ Args;
     validCode 验证码
 '''
 def purchaseSubmit(request,petid,amount,rareDegree,validCode):
-    count = 0
-    while count < 100:
-        code, msg = purchase(request, petid, amount, validCode)
-        if config.sendMsg == 0:
-            itchat.send(config.rareDegrees[rareDegree] + " " + str(amount) + "  " + msg, toUserName=config.toUserName)
-        else:
-            print(config.rareDegrees[rareDegree] + " " + str(amount) + "  " + msg)
-            # 如果是验证码错误则重新买
-        if code != '100':
-            break
-        else:
-            count = count + 1
-            continue
+    if config.type == 1:
+        count = 0
+        while count < 100:
+            code, msg = purchase(request, petid, amount, validCode)
+            if config.sendMsg == 0:
+                itchat.send(config.rareDegrees[rareDegree] + " " + str(amount) + "  " + msg, toUserName=config.toUserName)
+            else:
+                print(config.rareDegrees[rareDegree] + " " + str(amount) + "  " + msg)
+                # 如果是验证码错误则重新买
+            if code != '100':
+                break
+            else:
+                count = count + 1
+                continue
 
 #自定义异常
 class BusinessException(Exception):

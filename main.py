@@ -28,7 +28,7 @@ def main():
         if service.setProxies():
             try:
                 #"AMOUNT_DESC"  CREATETIME_DESC
-             data = service.queryData("AMOUNT_ASC")
+             data = service.queryData("CREATETIME_DESC")
              for item in data:
                  #没猜错的话这个是等级  0-4
                  rareDegree = item["rareDegree"]
@@ -44,24 +44,30 @@ def main():
 
                  #获取详情信息
                  body,eye,mouth,count =service.getLetGoDetail(petid)
+                 #service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
+                 if body=="天使" and count==5 and amount<81000:
+                     service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
+                     service.purchaseSubmit(request, petid, amount, rareDegree, validCode)
 
                  if body=='天使' and (eye == "白眉斗眼") :
+
                      # 稀有+金额
                      if rareDegree == 1 and amount < 40000:
                          service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
+                         service.purchaseSubmit(request, petid, amount, rareDegree, validCode)
 
                      # 卓越+金额
                      if rareDegree == 2 and amount < 50000:
                          service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
-
+                         service.purchaseSubmit(request, petid, amount, rareDegree, validCode)
                      # 史诗+金额
                      if rareDegree==3 and amount<180000:
                          service.printMsg(body,eye,mouth,rareDegree,amount,count,buyUrl)
-
+                         service.purchaseSubmit(request, petid, amount, rareDegree, validCode)
                      # 神话+金额
                      if rareDegree == 4 and amount < 2000000:
                          service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
-
+                         service.purchaseSubmit(request, petid, amount, rareDegree, validCode)
 
                   #神话+金额
                  if  rareDegree>=4 and amount<=400000:
@@ -72,15 +78,7 @@ def main():
                  if(amount<=config.rares[rareDegree]):
                      service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
                      # 发送微信提醒
-                     if config.sendMsg==0:
-                         itchat.send("等级： " + str(rareDegree) + "价格：" + str(amount), toUserName=config.toUserName)
-                         itchat.send(buyUrl, toUserName=config.toUserName)
-                      #根据petid 缓存url 过期时间为30秒 刷过链接就不在刷了
-
-                     # 下单
-                     if config.type==1:
-
-                         service.purchaseSubmit(request,petid,amount,rareDegree,validCode)
+                     service.purchaseSubmit(request,petid,amount,rareDegree,validCode)
 
             except service.BusinessException as e:
                 print(e.value)
