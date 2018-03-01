@@ -23,7 +23,7 @@ def main():
         request = login.login(config.username,config.password)
     cache =  Cache()
     while True:
-        time.sleep(random.randint(1,2))
+
         # 设置代理
         if service.setProxies():
             try:
@@ -45,7 +45,7 @@ def main():
                  #获取详情信息
                  body,eye,mouth,count =service.getLetGoDetail(petid)
                  #service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
-                 if body=="天使" and count==5 and amount<81000:
+                 if body=="天使" and count==5 and amount<70000:
                      service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
                      service.purchaseSubmit(request, petid, amount, rareDegree, validCode)
 
@@ -61,8 +61,11 @@ def main():
                          service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
                          service.purchaseSubmit(request, petid, amount, rareDegree, validCode)
                      # 史诗+金额
-                     if rareDegree==3 and amount<180000:
+                     if rareDegree==3 and amount<160000:
                          service.printMsg(body,eye,mouth,rareDegree,amount,count,buyUrl)
+                         service.purchaseSubmit(request, petid, amount, rareDegree, validCode)
+                     if rareDegree == 3 and amount < 220000 and count==5:
+                         service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
                          service.purchaseSubmit(request, petid, amount, rareDegree, validCode)
                      # 神话+金额
                      if rareDegree == 4 and amount < 2000000:

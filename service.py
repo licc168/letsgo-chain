@@ -94,7 +94,7 @@ def purchase(request,petId,pet_amount,pet_validCode):
 
         return  code,msg
     except Exception as e:
-        raise BusinessException("验证码获取异常")
+        raise BusinessException(e)
 
 '''
 验证码接口
@@ -211,7 +211,7 @@ Returns:
 
 def queryData(paixu):
     datas=[]
-    for num in range(1,100):
+    for num in range(1,50):
 
         data = queryMarketData(num, 10, paixu)
         datas = datas+data
