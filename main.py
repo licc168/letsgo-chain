@@ -1,113 +1,18 @@
-# -*- coding:utf8 -*-
-import base64
-import random
-from urllib import    request, parse
-import json
-import requests
-import time
-
-import common
-import  login
-import  config
-from cache import Cache
+import service
+import config
 import itchat
-'''
-获取数据接口
-'''
-headers = {'content-type': 'application/json'}
-proxie = { }
-def queryMarketData(pageNo,pageSize,querySortType):
-
-    try:
-        data ={
-            "appId": 1,
-            "lastAmount":None,
-            "lastRareDegree":3,
-            "pageNo": pageNo,
-            "pageSize": pageSize,
-            "petIds": [],
-            "querySortType": querySortType,
-            "tpl":"",
-            "requestId":time.time()
-        }
-       # print(data)
-        s =  requests.post("https://pet-chain.baidu.com/data/market/queryPetsOnSale", data=json.dumps(data), headers=headers,timeout=5)
-    except:
-        raise BusinessException("服务器异常")
-    status =  s.status_code
-    if status==200:
-        res = json.loads(s.content)
-        msg = res["errorMsg"]
-
-        if msg == "success":
-            data = res["data"]["petsOnSale"]
-            return data
-
-        else:
-            raise BusinessException("接口获取错误")
-    else:
-        raise BusinessException("接口异常"+str(status))
-'''
-下单接口
-'''
-def purchase(request,petId,pet_amount,pet_validCode):
-    try:
-
-        data = {
-            "appId":1,
-            "petId":petId,
-            "requestId":time.time(),
-            "tpl":"",
-            "amount":"{}".format(pet_amount),
-            "validCode": pet_validCode
-        }
-        seed, captcha =  get_captcha(request)
-        data['captcha'] = captcha
-        data['seed'] = seed
-        res = request.post("https://pet-chain.baidu.com/data/txn/create", headers=headers, data=json.dumps(data), timeout=2)
-        res = json.loads(res.content)
-        code = res['errorNo']
-        msg = res['errorMsg']
-
-        return  code,msg
-    except Exception as e:
-        raise BusinessException("验证码获取异常")
-
-'''
-验证码接口
-'''
-def get_captcha(request):
-    seed = -1
-    captcha = -1
-    data = {
-        "requestId": int(time.time() * 1000),
-        "appId": 1,
-        "tpl": ""
-    }
-    page = request.post("https://pet-chain.baidu.com/data/captcha/gen", data=json.dumps(data),
-                         headers=headers)
-    res = json.loads(page.content)
-    msg = res["errorMsg"]
-    if msg == "success":
-        #img = res["data"]["img"]
-
-        img = "data: image / jpeg;base64," + res["data"]["img"]
-        seed = res["data"]["seed"]
-        captcha =getValidCode(img)
-    else:
-        raise BusinessException("获取验证码图片异常")
-    return seed, captcha
+import time
+from cache import Cache
+import random
+import login
 
 
 
 
 
-'''
-AMOUNT_ASC 金额排序
-RAREDEGREE_DESC  稀有度排序
 
 
-'''
+
 def main():
     # 开启微信助手提醒需要扫码登录
     if config.sendMsg ==0:
@@ -116,112 +21,71 @@ def main():
     # 自动刷狗则需要登录
     if config.type==1:
         request = login.login(config.username,config.password)
-
     cache =  Cache()
-
     while True:
         time.sleep(random.randint(1,2))
-        # thisip = str(common.get_proxy(), encoding="utf-8")
-        # poxyIp = "http://{}".format(thisip);
-        # proxie["http"] = poxyIp;
-        # if common.isUseIp(thisip):
-        try:
-         #time.sleep(random.randint(1,2))
-         # 获取数据默认按照时间倒叙
-         #"AMOUNT_DESC"  "CREATETIME_ASC"
-         data =  queryMarketData(1,10,"AMOUNT_ASC")
-         for item in data:
-             #没猜错的话这个是等级  0-4
-             rareDegree = item["rareDegree"]
-             amount = float(item["amount"])
-             maxAmount = config.rares[rareDegree]
-             petid = item["petId"]
-             if(amount<=maxAmount):
-                 print("等级： " + str(rareDegree) + "价格：" + str(amount))
+        # 设置代理
+        if service.setProxies():
+            try:
+                #"AMOUNT_DESC"  CREATETIME_DESC
+             data = service.queryData("AMOUNT_ASC")
+             for item in data:
+                 #没猜错的话这个是等级  0-4
+                 rareDegree = item["rareDegree"]
+                 amount = float(item["amount"])
+                 petid = item["petId"]
                  validCode = item["validCode"]
-                 if validCode=='':
-                     print("validCode为空")
-                     continue
-                 buyUrl = config.urlDetail+petid+"&validCode="+validCode
+                 # 拼接购买链接
+                 buyUrl = config.urlDetail + petid + "&validCode=" + validCode
                  if (buyUrl == cache.get(petid)):
                      continue
-                 print(buyUrl)
-                 # 发送微信提醒
-                 if config.sendMsg==0:
-                     itchat.send("等级： " + str(rareDegree) + "价格：" + str(amount), toUserName=config.toUserName)
-                     itchat.send(buyUrl, toUserName=config.toUserName)
-                  #根据petid 缓存url 过期时间为30秒 刷过链接就不在刷了
-                 cache.set(petid, buyUrl,30)
-                 if config.type==1:
-                     #下单
-                     count =0
-                     while count<100:
-                         code ,msg  = purchase(request,petid,amount,validCode)
+                 #缓存购买链接
+                 cache.set(petid, buyUrl, 30)
 
-                         if config.sendMsg == 0:
-                             itchat.send("等级： " + str(rareDegree) + "价格：" + str(amount)+"  "+msg,toUserName=config.toUserName)
-                         else:
-                             print("等级： " + str(rareDegree) + "价格：" + str(amount) + "  " + msg)
-                         if code != '100':#如果是验证码错误则重新买
-                             break
-                         else:
-                             count =count+1
-                             continue
+                 #获取详情信息
+                 body,eye,mouth,count =service.getLetGoDetail(petid)
 
-        except BusinessException as e:
-            print(e.value)
-            continue
+                 if body=='天使' and (eye == "白眉斗眼") :
+                     # 稀有+金额
+                     if rareDegree == 1 and amount < 40000:
+                         service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
 
-'''
-调用第三方验证码接口
+                     # 卓越+金额
+                     if rareDegree == 2 and amount < 50000:
+                         service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
 
-'''
+                     # 史诗+金额
+                     if rareDegree==3 and amount<180000:
+                         service.printMsg(body,eye,mouth,rareDegree,amount,count,buyUrl)
+
+                     # 神话+金额
+                     if rareDegree == 4 and amount < 2000000:
+                         service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
 
 
-## 本地接口
-# def getValidCode(imgBase64):
-#     data = {'img':imgBase64}
-#     try:
-#         response = requests.post(config.apiurl, data=json.dumps(data),headers=headers,timeout = 1);
-#         if response.status_code == 200:
-#             return   response.text
-#         else:
-#             raise BusinessException("验证码异常")
-#     except:
-#         raise BusinessException("验证码服务器异常")
+                  #神话+金额
+                 if  rareDegree>=4 and amount<=400000:
+                     service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
 
 
-#  易源数据验证码接口
-def getValidCode(imgBase64):
-    send_data = parse.urlencode([
-        ('showapi_appid', config.showapi_appid)
-        , ('showapi_sign', config.showapi_sign)
-        , ('img_base64', imgBase64)
-        , ('typeId', 34)
-        , ('convert_to_jpg', 0)
 
-    ])
-    req = request.Request(config.apiurl)
-    try:
-        response = request.urlopen(req, data=send_data.encode('utf-8'), timeout=10)  # 10秒超时反馈
-    except Exception as e:
-        raise BusinessException("第三方接口服务器异常")
-    result = response.read().decode('utf-8')
-    result_json = json.loads(result)
-    print('result_json data is:', result_json)
-    if result_json["showapi_res_code"] == 0:
-        return result_json["showapi_res_body"]["Result"]
-    else:
-        raise BusinessException("第三方接口错误")
+                 if(amount<=config.rares[rareDegree]):
+                     service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
+                     # 发送微信提醒
+                     if config.sendMsg==0:
+                         itchat.send("等级： " + str(rareDegree) + "价格：" + str(amount), toUserName=config.toUserName)
+                         itchat.send(buyUrl, toUserName=config.toUserName)
+                      #根据petid 缓存url 过期时间为30秒 刷过链接就不在刷了
 
+                     # 下单
+                     if config.type==1:
 
-#自定义异常
-class BusinessException(Exception):
-    def __init__(self, value):
-        self.value = value
+                         service.purchaseSubmit(request,petid,amount,rareDegree,validCode)
 
-    def __str__(self):
-        return repr(self.value)
+            except service.BusinessException as e:
+                print(e.value)
+                continue
+
 
 
 main()
