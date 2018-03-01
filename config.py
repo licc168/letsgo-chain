@@ -1,11 +1,11 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
-username = 'licc168'
-password = 'licc5998012'
+username = '111'
+password = '111'
 
 
-# username = '13924020221'
-# password = 'zyy19900221-'
+# username = '111'
+# password = '111-'
 
 
 
