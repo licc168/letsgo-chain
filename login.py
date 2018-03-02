@@ -36,6 +36,7 @@ def set_sessions(browser):
     for cookie in cookies:
         #print cookie['name']+":"+cookie['value']
         request.cookies.set(cookie['name'], cookie['value'])
+    browser.close()
     return request
 
 

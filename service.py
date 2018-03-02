@@ -7,11 +7,12 @@ import requests
 import time
 
 import common
-import db
-import  login
+
+
 import  config
-from cache import Cache
+
 import itchat
+import redisClient
 '''
 获取数据接口
 '''
@@ -37,7 +38,7 @@ def queryMarketData(pageNo,pageSize,querySortType):
         data ={
             "appId": 1,
             "lastAmount":None,
-            "lastRareDegree":3,
+            "lastRareDegree":None,
             "pageNo": pageNo,
             "pageSize": pageSize,
             "petIds": [],
@@ -114,16 +115,19 @@ def get_captcha(request):
         "appId": 1,
         "tpl": ""
     }
-    page = request.post("https://pet-chain.baidu.com/data/captcha/gen", data=json.dumps(data),
-                         headers=headers)
-    res = json.loads(page.content)
-    msg = res["errorMsg"]
-    if msg == "success":
-        img = "data: image / jpeg;base64," + res["data"]["img"]
-        seed = res["data"]["seed"]
-        captcha =getValidCode(img)
-    else:
-        raise BusinessException("获取验证码图片异常")
+    try:
+        page = request.post("https://pet-chain.baidu.com/data/captcha/gen", data=json.dumps(data),
+                             headers=headers)
+        res = json.loads(page.content)
+        msg = res["errorMsg"]
+        if msg == "success":
+            img = "data: image / jpeg;base64," + res["data"]["img"]
+            seed = res["data"]["seed"]
+            captcha =getValidCode(img)
+        else:
+            raise BusinessException("获取验证码图片异常")
+    except Exception as e:
+        raise BusinessException(e)
     return seed, captcha
 
 
@@ -174,7 +178,7 @@ Raises:
     BusinessException 
 '''
 def getValidCode(imgBase64):
-    id,showapi_appid,showapi_sign = db.getApiConfig()
+    showapi_appid,showapi_sign = redisClient.getCodeApi()
     send_data = parse.urlencode([
         ('showapi_appid', showapi_appid)
         , ('showapi_sign', showapi_sign)
@@ -192,11 +196,11 @@ def getValidCode(imgBase64):
     result = response.read().decode('utf-8')
     result_json = json.loads(result)
     print('result_json data is:', result_json)
-    db.updateNum(id)
+
     if result_json["showapi_res_code"] == 0:
         return result_json["showapi_res_body"]["Result"]
     if result_json["showapi_res_code"] == -2:
-        db.updateDelete(id)
+        redisClient.delApiKey(showapi_appid)
     else:
         raise BusinessException("第三方接口错误")
 
