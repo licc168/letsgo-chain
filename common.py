@@ -2,10 +2,10 @@ import telnetlib
 import requests
 
 def get_proxy():
-    return requests.get("http://11111:5010/get/").content
+    return requests.get("http://47.94.196.111:5010/get/").content
 
 def delete_proxy(proxy):
-    requests.get("http://11111:5010/delete/?proxy={}".format(proxy))
+    requests.get("http://47.94.196.111:5010/delete/?proxy={}".format(proxy))
 
 
 # 检查代理是否可用

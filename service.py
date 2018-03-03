@@ -47,9 +47,9 @@ def queryMarketData(pageNo,pageSize,querySortType):
             "requestId":time.time()
         }
        # print(data)
-        s =  requests.post("https://pet-chain.baidu.com/data/market/queryPetsOnSale",proxies=proxies,  data=json.dumps(data), headers=headers,timeout=10)
+        s =  requests.post("https://pet-chain.baidu.com/data/market/queryPetsOnSale", data=json.dumps(data), headers=headers,timeout=10)
     except:
-        raise BusinessException("服务器异常")
+        raise BusinessException("查詢服务器异常")
     status =  s.status_code
     if status==200:
         res = json.loads(s.content)
@@ -59,9 +59,9 @@ def queryMarketData(pageNo,pageSize,querySortType):
             return data
 
         else:
-            raise BusinessException("接口获取错误")
+            raise BusinessException("查詢接口获取错误")
     else:
-        raise BusinessException("接口异常"+str(status))
+        raise BusinessException("查詢接口获取错误"+str(status))
 '''
 下单接口
 Args;
@@ -121,7 +121,7 @@ def get_captcha(request):
         res = json.loads(page.content)
         msg = res["errorMsg"]
         if msg == "success":
-            img = "data: image / jpeg;base64," + res["data"]["img"]
+            img = "data:image/jpeg;base64," + res["data"]["img"]
             seed = res["data"]["seed"]
             captcha =getValidCode(img)
         else:
@@ -156,7 +156,7 @@ def setProxies():
         thisip = str(common.get_proxy(), encoding="utf-8")
         poxyIp = "http://{}".format(thisip)
         if common.isUseIp(thisip):
-            proxies["http"] = poxyIp
+            redisClient.setPorxyIp(poxyIp)
             return True
         else:
             return False
@@ -187,22 +187,28 @@ def getValidCode(imgBase64):
         , ('convert_to_jpg', 0)
 
     ])
+    for i in range(1,10):
+        req = request.Request(config.apiurl)
+        try:
+            response = request.urlopen(req, data=send_data.encode('utf-8'), timeout=10)  # 10秒超时反馈
+            result = response.read().decode('utf-8')
+            result_json = json.loads(result)
+            print('result_json data is:', result_json)
 
-    req = request.Request(config.apiurl)
-    try:
-        response = request.urlopen(req, data=send_data.encode('utf-8'), timeout=10)  # 10秒超时反馈
-    except Exception as e:
-        raise BusinessException("第三方接口服务器异常")
-    result = response.read().decode('utf-8')
-    result_json = json.loads(result)
-    print('result_json data is:', result_json)
+            if result_json["showapi_res_code"] == 0:
+                return result_json["showapi_res_body"]["Result"]
+            if result_json["showapi_res_code"] == -2:
+                redisClient.delApiKey(showapi_appid)
+            else:
+                raise BusinessException("第三方接口错误")
+            break
+        except Exception as e:
+            print("第三方接口服务器异常")
 
-    if result_json["showapi_res_code"] == 0:
-        return result_json["showapi_res_body"]["Result"]
-    if result_json["showapi_res_code"] == -2:
-        redisClient.delApiKey(showapi_appid)
-    else:
-        raise BusinessException("第三方接口错误")
+
+
+
+
 
 
 '''
@@ -215,7 +221,7 @@ Returns:
 
 def queryData(paixu):
     datas=[]
-    for num in range(1,50):
+    for num in range(1,2):
 
         data = queryMarketData(num, 10, paixu)
         datas = datas+data

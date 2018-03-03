@@ -1,8 +1,13 @@
+import datetime
+
 import redis
 import json
-r = redis.Redis(host="localhost", port=6379, db=0)
+r = redis.Redis(host="11111", port=6379, db=0)
 
 letgoDataKey = "letgo-data"
+
+proxyIp = "proxy_ip"
+
 #获取第三方验证码秘钥
 def getCodeApi():
     apis = r.hgetall("apis")
@@ -18,6 +23,7 @@ def delApiKey(key):
 def addLetsgoData(data):
     r.delete(letgoDataKey)
     for item in data:
+        item['createtime']=str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         r.lpush(letgoDataKey, json.dumps(item))
 
 
@@ -26,3 +32,12 @@ def getLetsgoData():
     length = r.llen(letgoDataKey)
     return r.lrange(letgoDataKey,0,length)
 
+
+
+
+#设置有效代理
+def setPorxyIp(ip):
+    r.lpush(proxyIp,ip)
+
+def getProxyIp():
+    r.lpop(proxyIp)

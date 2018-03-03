@@ -37,22 +37,22 @@ def main():
              if (buyUrl == cache.get(petid)):
                  continue
              #缓存购买链接
-             cache.set(petid, buyUrl, 30)
+             cache.set(petid, buyUrl, 300)
 
              #获取详情信息
              body,eye,mouth,count =service.getLetGoDetail(petid)
              #service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
 
              # 稀有+金额
-             if body=="天使" and  rareDegree == 1 and amount < 3000:
+             if body=="天使" and  rareDegree == 1 and amount < 1000:
                  service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
                  service.purchaseSubmit(request, petid, amount, rareDegree, validCode)
              # 卓越+金额
-             if body == "天使" and rareDegree == 2 and amount < 6000:
+             if body == "天使" and rareDegree == 2 and amount < 2000:
                  service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
                  service.purchaseSubmit(request, petid, amount, rareDegree, validCode)
               #史诗+金额+5稀
-             if body == "天使" and count == 5 and amount < 60000:
+             if body == "天使" and count == 5 and amount < 40000:
                  service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
                  service.purchaseSubmit(request, petid, amount, rareDegree, validCode)
 
@@ -61,14 +61,14 @@ def main():
 
 
                  # 卓越+金额
-                 if rareDegree == 2 and amount < 50000:
+                 if rareDegree == 2 and amount < 30000:
                      service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
                      service.purchaseSubmit(request, petid, amount, rareDegree, validCode)
                  # 史诗+金额
-                 if rareDegree==3 and amount<160000:
+                 if rareDegree==3 and amount<100000:
                      service.printMsg(body,eye,mouth,rareDegree,amount,count,buyUrl)
                      service.purchaseSubmit(request, petid, amount, rareDegree, validCode)
-                 if rareDegree == 3 and amount < 220000 and count==5:
+                 if rareDegree == 3 and amount < 150000 and count==5:
                      service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
                      service.purchaseSubmit(request, petid, amount, rareDegree, validCode)
                  # 神话+金额
@@ -77,7 +77,7 @@ def main():
                      service.purchaseSubmit(request, petid, amount, rareDegree, validCode)
 
               #神话+金额
-             if  rareDegree>=4 and amount<=400000:
+             if  rareDegree>=4 and amount<=200000:
                  service.printMsg(body, eye, mouth, rareDegree, amount, count, buyUrl)
 
 
