@@ -1,5 +1,6 @@
 # -*- coding:utf8 -*-
 import base64
+import datetime
 import random
 from urllib import    request, parse
 import json
@@ -32,7 +33,7 @@ Returns:
 Raises:
     BusinessException 
 '''
-def queryMarketData(pageNo,pageSize,querySortType):
+def queryMarketData(pageNo,pageSize,querySortType,proxies):
 
     try:
         data ={
@@ -47,7 +48,7 @@ def queryMarketData(pageNo,pageSize,querySortType):
             "requestId":time.time()
         }
        # print(data)
-        s =  requests.post("https://pet-chain.baidu.com/data/market/queryPetsOnSale", data=json.dumps(data), headers=headers,timeout=10)
+        s =  requests.post("https://pet-chain.baidu.com/data/market/queryPetsOnSale",proxies = proxies,data=json.dumps(data), headers=headers,timeout=10)
     except:
         raise BusinessException("查詢服务器异常")
     status =  s.status_code
@@ -121,7 +122,7 @@ def get_captcha(request):
         res = json.loads(page.content)
         msg = res["errorMsg"]
         if msg == "success":
-            img = "data:image/jpeg;base64," + res["data"]["img"]
+            img = res["data"]["img"]
             seed = res["data"]["seed"]
             captcha =getValidCode(img)
         else:
@@ -153,13 +154,16 @@ Raises:
 '''
 def setProxies():
     try:
-        thisip = str(common.get_proxy(), encoding="utf-8")
-        poxyIp = "http://{}".format(thisip)
-        if common.isUseIp(thisip):
-            redisClient.setPorxyIp(poxyIp)
-            return True
-        else:
-            return False
+        proxyips = redisClient.getProxyData()
+        for ip, status in proxyips.items():
+            ip = str(ip,"utf-8")
+            if common.isUseIp(ip):
+                print(str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))+"  有效代理:"+ip)
+                redisClient.setPorxyIp(ip)
+            else:
+                #删除代理
+                redisClient.deleteProxyData(ip)
+
     except Exception as e:
         raise BusinessException("代理IP获取异常，请检查接口是否配对")
 
@@ -177,36 +181,51 @@ Returns:
 Raises:
     BusinessException 
 '''
-def getValidCode(imgBase64):
-    showapi_appid,showapi_sign = redisClient.getCodeApi()
-    send_data = parse.urlencode([
-        ('showapi_appid', showapi_appid)
-        , ('showapi_sign', showapi_sign)
-        , ('img_base64', imgBase64)
-        , ('typeId', 34)
-        , ('convert_to_jpg', 0)
+# def getValidCode(imgBase64):
+#     showapi_appid,showapi_sign = redisClient.getCodeApi()
+#     send_data = parse.urlencode([
+#         ('showapi_appid', showapi_appid)
+#         , ('showapi_sign', showapi_sign)
+#         , ('img_base64', imgBase64)
+#         , ('typeId', 34)
+#         , ('convert_to_jpg', 0)
+#
+#     ])
+#     for i in range(1,10):
+#         req = request.Request(config.apiurl)
+#         try:
+#             response = request.urlopen(req, data=send_data.encode('utf-8'), timeout=10)  # 10秒超时反馈
+#             result = response.read().decode('utf-8')
+#             result_json = json.loads(result)
+#             print('result_json data is:', result_json)
+#
+#             if result_json["showapi_res_code"] == 0:
+#                 return result_json["showapi_res_body"]["Result"]
+#             if result_json["showapi_res_code"] == -2:
+#                 redisClient.delApiKey(showapi_appid)
+#             else:
+#                 raise BusinessException("第三方接口错误")
+#             break
+#         except Exception as e:
+#             print("第三方接口服务器异常")
 
-    ])
-    for i in range(1,10):
-        req = request.Request(config.apiurl)
-        try:
-            response = request.urlopen(req, data=send_data.encode('utf-8'), timeout=10)  # 10秒超时反馈
-            result = response.read().decode('utf-8')
-            result_json = json.loads(result)
-            print('result_json data is:', result_json)
 
-            if result_json["showapi_res_code"] == 0:
-                return result_json["showapi_res_body"]["Result"]
-            if result_json["showapi_res_code"] == -2:
-                redisClient.delApiKey(showapi_appid)
-            else:
-                raise BusinessException("第三方接口错误")
-            break
-        except Exception as e:
-            print("第三方接口服务器异常")
+def getValidCode(img):
+    url = "http://imgserver.yunshitu.cn/v1/dispatcher"
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
+    combiner_id = "4c039ead-b2da-423b-b4d4-64fe8d6e8331"
+    data = {
+        "combiner_id": combiner_id, \
+        "image_base64": img
+    }
 
-
+    try:
+        page = requests.post(url, data=data, headers=headers)
+        word = "".join([ele[0]["name"] for ele in page.json().get("data").get("classify")])
+    except:
+        word = ""
+    return word
 
 
 
@@ -215,15 +234,17 @@ def getValidCode(imgBase64):
 组合查询出来的狗狗分页列表
 Args;
     paixu 排序
+    pageNum 页数
+    proxyIp 代理IP
 Returns: 
     狗狗信息列表
 '''
 
-def queryData(paixu):
+def queryData(paixu,pageNum,proxyIp):
     datas=[]
-    for num in range(1,2):
+    for num in range(1,pageNum):
 
-        data = queryMarketData(num, 10, paixu)
+        data = queryMarketData(num, 10, paixu,proxyIp)
         datas = datas+data
 
     return datas
@@ -329,7 +350,6 @@ class BusinessException(Exception):
 
     def __str__(self):
         return repr(self.value)
-
 
 
 

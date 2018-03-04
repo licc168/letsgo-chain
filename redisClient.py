@@ -2,7 +2,7 @@ import datetime
 
 import redis
 import json
-r = redis.Redis(host="11111", port=6379, db=0)
+r = redis.Redis(host="111111", port=6379, db=0)
 
 letgoDataKey = "letgo-data"
 
@@ -34,10 +34,21 @@ def getLetsgoData():
 
 
 
+def getProxyData():
+    return  r.hgetall("useful_proxy")
+
+def deleteProxyData(key):
+    r.hdel("useful_proxy",key)
 
 #设置有效代理
 def setPorxyIp(ip):
     r.lpush(proxyIp,ip)
 
 def getProxyIp():
-    r.lpop(proxyIp)
+    ip = r.lpop(proxyIp)
+    if(ip == None):
+        return "127.0.0.1"
+    else:
+        return str(ip, "utf-8")
+
+getProxyData()
