@@ -211,7 +211,7 @@ Raises:
 
 
 def getValidCode(img):
-    url = "http://imgserver.yunshitu.cn/v1/dispatcher"
+    url = "1111"
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
     combiner_id = "4c039ead-b2da-423b-b4d4-64fe8d6e8331"
