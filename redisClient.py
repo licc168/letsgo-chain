@@ -1,8 +1,10 @@
+# -*- coding:utf8 -*-
 import datetime
 
 import redis
 import json
-r = redis.Redis(host="111111", port=6379, db=0)
+import config
+r = redis.Redis(host="localhost",password="11111", port=6379, db=0)
 
 letgoDataKey = "letgo-data"
 
@@ -51,4 +53,26 @@ def getProxyIp():
     else:
         return str(ip, "utf-8")
 
-getProxyData()
+def setBuySuccess(msg):
+    r.lpush("buy_success",msg)
+
+
+def setImg(img):
+    r.set(config.username+"_img",img)
+
+def getImg():
+   return r.get(config.username+"_img")
+
+
+def setCode(code):
+    r.set("code",code)
+
+def getCode():
+   return r.get("code")
+def setSeed(seed):
+    r.set("seed",seed)
+
+def getSeed():
+   return r.get("seed")
+
+

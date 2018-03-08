@@ -14,7 +14,7 @@ while True:
             proxies['http'] = redisClient.getProxyIp()
         else:
             proxies['http'] = proxy
-        data = service.queryData("CREATETIME_DESC",2,proxies)
+        data = service.queryData("CREATETIME_DESC",3,proxies)
         cache.set("proxies",proxies,30)
         redisClient.addLetsgoData(data)
     except Exception as e:
