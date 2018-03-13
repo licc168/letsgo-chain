@@ -1,29 +1,15 @@
+# -*- coding: UTF-8 -*-
+#!/usr/bin/python
 import time
 import requests
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+import config
+import re
 
-def login(name, passwd):
-    url = 'https://passport.baidu.com/v2/?login'
-    # 这里可以用Chrome、Phantomjs等，如果没有加入环境变量，需要指定具体的位置
-    driver = webdriver.Chrome()
-    driver.get(url)
-    print('开始登录')
-    chg_field =WebDriverWait(driver, 2).until(
-        EC.presence_of_element_located((By.ID, "TANGRAM__PSP_3__footerULoginBtn")))
-    chg_field.click()
-    name_field = driver.find_element_by_id('TANGRAM__PSP_3__userName')
-    name_field.send_keys(name)
-    passwd_field = driver.find_element_by_id('TANGRAM__PSP_3__password')
-    passwd_field.send_keys(passwd)
-    login_button = driver.find_element_by_id('TANGRAM__PSP_3__submit')
-    login_button.click()
-    return set_sessions(driver)
+def login():
+    return set_sessions()
 
 
-def set_sessions(browser):
+def set_sessions():
     time.sleep(10)
     request = requests.Session()
     headers = {
@@ -32,13 +18,14 @@ def set_sessions(browser):
             "(KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36"
     }
     request.headers.update(headers)
-    cookies = browser.get_cookies()
-    for cookie in cookies:
-        #print cookie['name']+":"+cookie['value']
-        request.cookies.set(cookie['name'], cookie['value'])
-    browser.close()
-    return request
+    cookies = config.cookies
+    cooklist = re.split("; ",cookies)
+    for cookie in cooklist:
+        cookie1 = re.split("=",cookie)
+        request.cookies.set(cookie1[0], cookie1[1])
 
+
+    return request
 
 
 

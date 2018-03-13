@@ -4,7 +4,7 @@ import datetime
 import redis
 import json
 import config
-r = redis.Redis(host="localhost",password="11111", port=6379, db=0)
+r = redis.Redis(host="123123",password="123213213", port=6379, db=0)
 
 letgoDataKey = "letgo-data"
 
@@ -64,15 +64,6 @@ def getImg():
    return r.get(config.username+"_img")
 
 
-def setCode(code):
-    r.set("code",code)
 
-def getCode():
-   return r.get("code")
-def setSeed(seed):
-    r.set("seed",seed)
-
-def getSeed():
-   return r.get("seed")
 
 

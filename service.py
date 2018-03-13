@@ -129,7 +129,8 @@ def get_captcha(request):
     }
     try:
         headers['User-Agent'] = ua.random
-        page = request.post("https://pet-chain.baidu.com/data/captcha/gen", data=json.dumps(data),
+        proxies['http'] = redisClient.getProxyIp()
+        page = request.post("https://pet-chain.baidu.com/data/captcha/gen", data=json.dumps(data),proxies=proxies,
                              headers=headers)
         res = json.loads(page.content)
         msg = res["errorMsg"]
@@ -349,7 +350,7 @@ def purchaseSubmit(request,petid,amount,rareDegree,validCode):
             #存储图片作为样本
             #saveImage(code, captcha)
             if msg=='success':
-                redisClient.setBuySuccess(config.username+"  "+config.rareDegrees[rareDegree] + " " + str(amount) )
+                redisClient.setBuySuccess(config.username+"  "+config.rareDegrees[rareDegree] )
 
             if config.sendMsg == 0:
                 itchat.send(config.rareDegrees[rareDegree] + " " + str(amount) + "  " + msg, toUserName=config.toUserName)
