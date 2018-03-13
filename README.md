@@ -12,7 +12,7 @@
 ## 安装
   具体不做详细介绍，可自行百度
 - python3.6
-- selenium以及WebDriver驱动
+
 - pip install pillow
 - tensorflow
 - redis
